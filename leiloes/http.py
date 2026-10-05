@@ -26,9 +26,16 @@ class Cliente:
         return self.cache_dir / (hashlib.sha1(url.encode()).hexdigest() + ".html")
 
     def get(self, url):
-        arq = self._arquivo_cache(url)
+        dados = self._baixar(url, ".html")
+        return dados.decode("utf-8", errors="replace") if dados is not None else None
+
+    def get_bytes(self, url):
+        return self._baixar(url, ".bin")
+
+    def _baixar(self, url, ext):
+        arq = self._arquivo_cache(url).with_suffix(ext)
         if arq.exists() and time.time() - arq.stat().st_mtime < self.cache_horas * 3600:
-            return arq.read_text(encoding="utf-8")
+            return arq.read_bytes()
 
         erro = None
         for tentativa in range(self.tentativas):
@@ -40,11 +47,12 @@ class Cliente:
                 r = self.sessao.get(url, timeout=40)
                 if r.status_code == 404:
                     return None
+                if r.status_code == 403:
+                    return None  # proteção anti-robô: não insistimos
                 r.raise_for_status()
-                r.encoding = r.encoding or "utf-8"
                 self.cache_dir.mkdir(parents=True, exist_ok=True)
-                arq.write_text(r.text, encoding="utf-8")
-                return r.text
+                arq.write_bytes(r.content)
+                return r.content
             except requests.RequestException as e:
                 erro = e
                 time.sleep(2 ** (tentativa + 1))

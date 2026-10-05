@@ -8,7 +8,7 @@ from openpyxl.utils import get_column_letter
 
 COLUNAS = [
     ("Prioridade", 11),
-    ("Dias até 2ª praça", 10),
+    ("Dias até última praça", 10),
     ("UF", 5),
     ("Município", 20),
     ("Modalidade", 13),
@@ -22,8 +22,11 @@ COLUNAS = [
     ("Cartório / Comarca", 24),
     ("CCIR (INCRA)", 18),
     ("Processo", 27),
-    ("Partes citadas – devedor? (conferir)", 32),
-    ("Partes citadas – credor? (conferir)", 32),
+    ("Devedor / executado (conferir)", 34),
+    ("Origem do nome", 10),
+    ("CPF/CNPJ citados", 22),
+    ("Credor / exequente (conferir)", 30),
+    ("Titular citado na matrícula", 26),
     ("Leiloeiro", 20),
     ("Situação", 11),
     ("Título", 40),
@@ -33,6 +36,7 @@ COLUNAS = [
     ("Incluído em", 12),
     ("Descrição", 60),
     ("Fonte", 16),
+    ("Também anunciado em", 40),
 ]
 
 _CORES = {
@@ -74,7 +78,10 @@ def _linha(l, agora):
         l.ccir,
         l.processos[0] if l.processos else "",
         l.devedor,
+        l.devedor_fonte,
+        ", ".join(l.documentos[:4]),
         l.credor,
+        l.titular,
         l.leiloeiro,
         l.situacao,
         l.titulo,
@@ -84,6 +91,7 @@ def _linha(l, agora):
         l.data_inclusao,
         l.descricao[:2000],
         l.fonte,
+        " | ".join(l.tambem_em),
     ]
 
 
@@ -135,17 +143,18 @@ def gerar(leiloes, caminho, agora=None):
 
     # Aba de resumo por UF e modalidade
     res = wb.create_sheet("Resumo")
-    res.append(["UF", "Modalidade", "Leilões", "Urgentes (≤7 dias)", "Soma lances 1ª praça (R$)"])
+    res.append(["UF", "Modalidade", "Leilões", "Urgentes (≤7 dias)", "Soma lances 1ª praça (R$)", "Com devedor identificado"])
     grupos = {}
     for r in linhas:
-        g = grupos.setdefault((r[2], r[4]), [0, 0, 0.0])
+        g = grupos.setdefault((r[2], r[4]), [0, 0, 0.0, 0])
         g[0] += 1
         g[1] += r[0] == "URGENTE"
         g[2] += r[7] or 0
-    for (uf, mod), (q, u, soma) in sorted(grupos.items()):
-        res.append([uf, mod, q, u, soma])
+        g[3] += bool(r[idx["Devedor / executado (conferir)"] - 1])
+    for (uf, mod), (q, u, soma, dev) in sorted(grupos.items()):
+        res.append([uf, mod, q, u, soma, dev])
         res.cell(row=res.max_row, column=5).number_format = "#,##0.00"
-    for i, larg in enumerate((6, 18, 10, 18, 24), 1):
+    for i, larg in enumerate((6, 30, 10, 18, 24, 22), 1):
         res.column_dimensions[get_column_letter(i)].width = larg
         res.cell(row=1, column=i).font = Font(bold=True)
     res.append([])

@@ -5,13 +5,12 @@ aceita o filtro `venda` (modalidade) e paginação `pag`, 20 itens por página.
 """
 
 import re
-from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 
 from bs4 import BeautifulSoup
 
 from .. import extrair
+from ..modelo import Leilao
 
 BASE = "https://www.leilaodefazenda.com.br"
 FONTE = "Leilão de Fazendas"
@@ -35,43 +34,6 @@ _ROTULOS = [
     "Descrição", "Observação",
 ]
 _FIM_DETALHES = re.compile(r"\s(?:Valor avaliado|Valor do Imóvel|Considerações Legais)\s")
-
-
-@dataclass
-class Leilao:
-    fonte: str
-    codigo: str
-    url: str
-    uf: str
-    modalidade: str
-    titulo: str = ""
-    municipio: str = ""
-    tipo: str = ""
-    leiloeiro: str = ""
-    situacao: str = ""
-    area_ha: Optional[float] = None
-    valor_avaliacao: Optional[float] = None
-    pracas: list = field(default_factory=list)  # [(n, datetime, valor)]
-    matricula: str = ""
-    cartorio: str = ""
-    ccir: str = ""
-    processos: list = field(default_factory=list)
-    devedor: str = ""
-    credor: str = ""
-    data_inclusao: Optional[datetime] = None
-    link_edital: str = ""
-    link_matricula: str = ""
-    descricao: str = ""
-
-    @property
-    def proxima_praca(self):
-        agora = datetime.now()
-        futuras = [p for p in self.pracas if p[1] >= agora]
-        return futuras[0] if futuras else None
-
-    @property
-    def ultima_praca(self):
-        return self.pracas[-1] if self.pracas else None
 
 
 def url_lista(uf, modalidade, pagina=1):
@@ -113,17 +75,15 @@ def ler_detalhe(html, url, uf, modalidade):
     c = _campos(texto)
 
     codigo = (c.get("Código Imóvel") or "").split(" ")[0] or url.rsplit("-", 1)[-1]
-    loc = c.get("Localização", "")
-    municipio = loc.split("/", 1)[1].strip() if "/" in loc else loc
+    # "PR /Guarapuava /Boqueirão" -> "Guarapuava"
+    partes_loc = [p.strip() for p in c.get("Localização", "").split("/")]
+    municipio = partes_loc[1] if len(partes_loc) > 1 else partes_loc[0]
     tipo = c.get("Tipo", "")
     leiloeiro = re.sub(r"\s*\(Ver An[uú]ncio.*", "", c.get("Leiloeiro", "")).strip()
 
     descricao = " ".join(x for x in (c.get("Descrição"), c.get("Observação")) if x)
     titulo_tag = sopa.find("h1") or sopa.find("title")
     titulo = re.sub(r"\s+", " ", titulo_tag.get_text(" ")).strip() if titulo_tag else ""
-
-    # Praças: o texto a partir do primeiro "Praça" (resumo do lado direito)
-    pracas = extrair.pracas(texto)
 
     m_sit = re.search(r"Situação:\s*(Ocupado|Desocupado)", texto)
     m_area = re.search(r"Área Total:\s*([\d.,]+)\s*m²", texto)
@@ -149,9 +109,12 @@ def ler_detalhe(html, url, uf, modalidade):
         except ValueError:
             pass
 
+    # Campos "Matrícula:"/"Comarca:" do site às vezes emendam o texto seguinte
+    matricula = extrair.matricula(c.get("Matrícula", "")) or ""
+    comarca = re.split(r"\s+[A-ZÁ-Ú][\wÁ-ú]+(?:\s[\wÁ-ú]+){0,2}:", c.get("Comarca", ""))[0].strip()
     cartorio = extrair.cartorio(descricao, f"{municipio}/{uf.upper()}")
-    if not cartorio and c.get("Comarca"):
-        cartorio = c["Comarca"] + (f" ({c['Ofício']}º Ofício)" if c.get("Ofício") else "")
+    if not cartorio and comarca:
+        cartorio = comarca + (f" ({c['Ofício'][:3].strip()}º Ofício)" if c.get("Ofício") else "")
 
     return Leilao(
         fonte=FONTE,
@@ -168,18 +131,14 @@ def ler_detalhe(html, url, uf, modalidade):
         valor_avaliacao=extrair.numero_br(
             re.sub(r"[^\d.,]", "", c.get("Valor de Avaliação", "")) or None
         ),
-        pracas=pracas,
-        matricula=(c.get("Matrícula") or extrair.matricula(descricao) or "").strip(),
+        pracas=extrair.pracas(texto),
+        matricula=matricula,
         cartorio=cartorio or "",
-        ccir=extrair.ccir(descricao) or "",
-        processos=extrair.processos(descricao),
-        devedor=extrair.devedor(descricao) or "",
-        credor=extrair.credor(descricao) or "",
         data_inclusao=data_inc,
         link_edital=links.get("edital-link", ""),
         link_matricula=links.get("matricula-link", ""),
         descricao=descricao,
-    )
+    ).completar(descricao)
 
 
 def coletar(cliente, ufs, modalidades=None, log=print):
