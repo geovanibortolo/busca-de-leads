@@ -87,8 +87,12 @@ details.guia[open] > summary::before { content: "▾ "; }
 .barra .q { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
 
 /* Filtros */
-.filtros { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(6px); padding: 10px 0; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.filtros, .tema { display: none; }
+html.js .filtros { display: block; }
+html.js .tema { display: inline-block; }
+[hidden], .cartao.oculto { display: none !important; }
+.filtros { position: sticky; top: 0; z-index: 5; background: var(--bg);
+  padding: 10px 0; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
 .filtros .linha { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .filtros input[type=search], .filtros select {
   font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
@@ -102,6 +106,7 @@ details.guia[open] > summary::before { content: "▾ "; }
 
 /* Grupos e cartões */
 section.grupo { margin: 18px 0 26px; }
+section.grupo > h2 .qtd { color: var(--muted); font-weight: 400; }
 section.grupo > h2 { display: flex; align-items: center; gap: 10px; font-size: 18px; margin: 0 0 4px; }
 section.grupo > p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
 .ponto { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
@@ -145,7 +150,7 @@ details.desc p { font-size: 13px; color: var(--muted); margin: 6px 0 0; max-heig
 .vazio { padding: 30px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); }
 footer { color: var(--faint); font-size: 13px; padding: 24px 0 40px; border-top: 1px solid var(--line); margin-top: 20px; }
 @media (max-width: 720px) {
-  .filtros { position: static; backdrop-filter: none; }
+  .filtros { position: static; }
 }
 @media (max-width: 520px) {
   .cartoes { grid-template-columns: 1fr; }
@@ -163,7 +168,7 @@ footer { color: var(--faint); font-size: 13px; padding: 24px 0 40px; border-top:
   <header class="topo">
     <button class="tema" id="tema" type="button">Tema</button>
     <h1>Leilões de imóveis rurais</h1>
-    <p id="subtitulo"></p>
+    <p id="subtitulo">__SUBTITULO__</p>
   </header>
 
   <details class="guia">
@@ -188,18 +193,18 @@ footer { color: var(--faint); font-size: 13px; padding: 24px 0 40px; border-top:
     </div>
   </details>
 
-  <div class="kpis" id="kpis"></div>
+  <div class="kpis" id="kpis">__KPIS__</div>
 
   <div class="dist">
-    <div class="painel"><h2>Por estado</h2><div id="distUf"></div></div>
-    <div class="painel"><h2>Por tipo de leilão</h2><div id="distMod"></div></div>
+    <div class="painel"><h2>Por estado</h2><div id="distUf">__DIST_UF__</div></div>
+    <div class="painel"><h2>Por tipo de leilão</h2><div id="distMod">__DIST_MOD__</div></div>
   </div>
 </div>
 
 <div class="filtros">
   <div class="wrap linha">
     <input type="search" id="busca" placeholder="Buscar município, devedor, credor, processo, matrícula…" aria-label="Buscar">
-    <span id="chipsUf"></span>
+    <span id="chipsUf">__CHIPS_UF__</span>
     <select id="mod" aria-label="Tipo de leilão">
       <option value="">Todos os tipos</option>
       <option>Judicial</option><option>Extrajudicial</option><option>Outro</option><option>PGFN</option>
@@ -210,198 +215,121 @@ footer { color: var(--faint); font-size: 13px; padding: 24px 0 40px; border-top:
       <option value="area">Ordenar: maior área</option>
     </select>
     <label class="chk"><input type="checkbox" id="soDevedor"> só com devedor identificado</label>
-    <span class="contagem" id="contagem"></span>
+    <span class="contagem" id="contagem">Mostrando __TOTAL__ de __TOTAL__</span>
   </div>
 </div>
 
-<main class="wrap" id="lista"></main>
+<main class="wrap" id="lista">__LISTA__</main>
 
 <div class="wrap">
-  <footer id="rodape"></footer>
+  <footer id="rodape">
+    <p><b>Fontes:</b> __FONTES__. Imóveis repetidos em mais de um site aparecem uma vez só.</p>
+    <p>Nomes, CPFs/CNPJs e números de processo foram extraídos automaticamente do texto público dos anúncios e editais e podem conter erros. Confirme sempre no edital e na matrícula atualizada antes de qualquer contato.</p>
+  </footer>
 </div>
 
 <script>
-const DADOS = __DADOS__;
-const GERADO = new Date("__GERADO__");
-const AGORA = new Date();
-const DIA = 86400000;
+(function () {
+  var raiz = document.documentElement;
+  raiz.className += " js";
+  var GERADO = new Date("__GERADO__");
+  var AGORA = new Date();
+  var DIA = 86400000;
+  function todos(sel, base) { return Array.prototype.slice.call((base || document).querySelectorAll(sel)); }
+  function semAcento(s) {
+    s = String(s || "").toLowerCase();
+    return s.normalize ? s.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : s;
+  }
 
-const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-const num = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
-const dataCurta = d => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
-const hora = d => d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const semAcento = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  // Tema
+  try { var t = localStorage.getItem("tema"); if (t) raiz.setAttribute("data-theme", t); } catch (e) {}
+  document.getElementById("tema").onclick = function () {
+    var atual = raiz.getAttribute("data-theme");
+    var escuro = atual ? atual === "dark" : (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+    raiz.setAttribute("data-theme", escuro ? "light" : "dark");
+    try { localStorage.setItem("tema", raiz.getAttribute("data-theme")); } catch (e) {}
+  };
 
-// Prazo e prioridade calculados na hora de abrir (o arquivo continua certo dias depois)
-for (const l of DADOS) {
-  l.pracas.forEach(p => p.data = new Date(p.quando));
-  const ultima = l.pracas.length ? l.pracas[l.pracas.length - 1].data : null;
-  l.dias = ultima ? Math.ceil((ultima - AGORA) / DIA) : null;
-  l.prio = l.dias == null ? "SEM DATA" : l.dias <= 7 ? "URGENTE" : l.dias <= 21 ? "ALTA" : "MÉDIA";
-  l.lance = (l.pracas.find(p => p.data >= AGORA) || {}).valor ?? (l.pracas[0] || {}).valor ?? null;
-  l.busca = semAcento([l.municipio, l.uf, l.devedor, l.credor, l.titular, l.processos.join(" "), l.matricula,
-    l.cartorio, l.titulo, l.leiloeiro, l.docs.join(" ")].join(" "));
-}
-const ATIVOS = DADOS.filter(l => l.dias == null || l.dias >= 0);
-
-const estado = { busca: "", ufs: new Set(), mod: "", soDevedor: false, ordem: "prazo" };
-
-// Tema
-const raiz = document.documentElement;
-try { const t = localStorage.getItem("tema"); if (t) raiz.dataset.theme = t; } catch (e) {}
-document.getElementById("tema").onclick = () => {
-  const escuro = raiz.dataset.theme ? raiz.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-  raiz.dataset.theme = escuro ? "light" : "dark";
-  try { localStorage.setItem("tema", raiz.dataset.theme); } catch (e) {}
-};
-
-document.getElementById("subtitulo").textContent =
-  `${ATIVOS.length} imóveis com leilão marcado em ${[...new Set(ATIVOS.map(l => l.uf))].sort().join(", ")} · dados coletados em ${dataCurta(GERADO)} às ${hora(GERADO)}`;
-
-function kpis() {
-  const urg = ATIVOS.filter(l => l.prio === "URGENTE").length;
-  const alta = ATIVOS.filter(l => l.prio === "ALTA").length;
-  const dev = ATIVOS.filter(l => l.devedor).length;
-  const total = ATIVOS.reduce((s, l) => s + (l.lance || 0), 0);
-  const area = ATIVOS.reduce((s, l) => s + (l.area || 0), 0);
-  document.getElementById("kpis").innerHTML = `
-    <div class="kpi urgente"><div class="rot">Urgentes (≤ 7 dias)</div><div class="num">${urg}</div><div class="sub">+ ${alta} com 8 a 21 dias</div></div>
-    <div class="kpi"><div class="rot">Com devedor identificado</div><div class="num">${dev}</div><div class="sub">${Math.round(dev / Math.max(ATIVOS.length, 1) * 100)}% dos leilões</div></div>
-    <div class="kpi"><div class="rot">Soma dos lances mínimos</div><div class="num">${brl.format(total / 1e6).replace(/\s?R\$\s?/, "R$ ")} mi</div><div class="sub">próxima praça de cada imóvel</div></div>
-    <div class="kpi"><div class="rot">Área total</div><div class="num">${num.format(Math.round(area))} ha</div><div class="sub">quando informada no anúncio</div></div>`;
-}
-
-function barras(alvo, contagem, ativo, aoClicar) {
-  const max = Math.max(...Object.values(contagem), 1);
-  const el = document.getElementById(alvo);
-  el.innerHTML = Object.entries(contagem).sort((a, b) => b[1] - a[1]).map(([k, v]) => `
-    <button class="barra ${ativo(k) ? "ativa" : ""}" data-k="${esc(k)}" type="button" aria-pressed="${ativo(k)}">
-      <span>${esc(k)}</span><span class="trilho"><span class="cheio" style="width:${v / max * 100}%"></span></span><span class="q">${v}</span>
-    </button>`).join("");
-  el.querySelectorAll(".barra").forEach(b => b.onclick = () => aoClicar(b.dataset.k));
-}
-
-function contar(lista, f) { return lista.reduce((o, l) => (o[f(l)] = (o[f(l)] || 0) + 1, o), {}); }
-
-function distribuicao() {
-  barras("distUf", contar(ATIVOS, l => l.uf), k => estado.ufs.has(k), k => {
-    estado.ufs.has(k) ? estado.ufs.delete(k) : estado.ufs.add(k); render();
+  // Recalcula prazos (o arquivo continua certo dias depois da coleta)
+  var secoes = {};
+  todos("section.grupo").forEach(function (s) { secoes[s.getAttribute("data-prio")] = s; });
+  var cartoes = todos("article.cartao");
+  cartoes.forEach(function (c) {
+    c._busca = semAcento(c.getAttribute("data-busca"));
+    var u = c.getAttribute("data-ultima");
+    if (!u) return;
+    var dias = Math.ceil((new Date(u) - AGORA) / DIA);
+    c._dias = dias;
+    if (dias < 0) { c._expirado = true; return; }
+    var prio = dias <= 7 ? "URGENTE" : dias <= 21 ? "ALTA" : "MÉDIA";
+    var el = c.querySelector(".js-dias");
+    if (el) { el.textContent = dias; el.nextSibling.textContent = dias === 1 ? "dia" : "dias"; }
+    var caixa = c.querySelector(".prazo");
+    if (caixa) caixa.className = "prazo " + prio;
+    c.className = "cartao " + prio;
+    if (secoes[prio]) secoes[prio].querySelector(".cartoes").appendChild(c);
   });
-  barras("distMod", contar(ATIVOS, l => l.grupo), k => estado.mod === k, k => {
-    estado.mod = estado.mod === k ? "" : k; document.getElementById("mod").value = estado.mod; render();
+
+  var estado = { busca: "", ufs: {}, grupo: "", soDevedor: false, ordem: "prazo" };
+  function temUf() { for (var k in estado.ufs) if (estado.ufs[k]) return true; return false; }
+
+  function aplicar() {
+    var termos = semAcento(estado.busca).split(/\s+/).filter(Boolean);
+    var filtrarUf = temUf(), n = 0;
+    cartoes.forEach(function (c) {
+      var ok = !c._expirado &&
+        (!filtrarUf || estado.ufs[c.getAttribute("data-uf")]) &&
+        (!estado.grupo || c.getAttribute("data-grupo") === estado.grupo) &&
+        (!estado.soDevedor || c.getAttribute("data-dev") === "1") &&
+        termos.every(function (t) { return c._busca.indexOf(t) >= 0; });
+      c.classList.toggle("oculto", !ok);
+      if (ok) n++;
+    });
+    var chave = { prazo: function (c) { return c._dias == null ? 1e9 : c._dias * 2 - (c.getAttribute("data-dev") === "1" ? 1 : 0); },
+                  valor: function (c) { return -parseFloat(c.getAttribute("data-lance")); },
+                  area: function (c) { return -parseFloat(c.getAttribute("data-area")); } }[estado.ordem];
+    Object.keys(secoes).forEach(function (p) {
+      var caixa = secoes[p].querySelector(".cartoes");
+      var itens = todos("article.cartao", caixa).sort(function (a, b) { return chave(a) - chave(b); });
+      itens.forEach(function (c) { caixa.appendChild(c); });
+      var vis = itens.filter(function (c) { return !c.classList.contains("oculto"); }).length;
+      secoes[p].hidden = vis === 0;
+      secoes[p].querySelector(".qtd").textContent = "(" + vis + ")";
+    });
+    document.getElementById("contagem").textContent = "Mostrando " + n + " de " + cartoes.filter(function (c) { return !c._expirado; }).length;
+    var vazio = document.getElementById("semResultado");
+    if (vazio) vazio.hidden = n > 0;
+    todos("#chipsUf .chip, #distUf .barra").forEach(function (b) {
+      var on = !!estado.ufs[b.getAttribute("data-uf")];
+      b.setAttribute("aria-pressed", on); b.classList.toggle("ativa", on);
+    });
+    todos("#distMod .barra").forEach(function (b) {
+      var on = estado.grupo === b.getAttribute("data-grupo");
+      b.setAttribute("aria-pressed", on); b.classList.toggle("ativa", on);
+    });
+  }
+
+  todos("#chipsUf .chip, #distUf .barra").forEach(function (b) {
+    b.onclick = function () { var uf = b.getAttribute("data-uf"); estado.ufs[uf] = !estado.ufs[uf]; aplicar(); };
   });
-  document.getElementById("chipsUf").innerHTML = [...new Set(ATIVOS.map(l => l.uf))].sort().map(uf =>
-    `<button class="chip" type="button" data-uf="${uf}" aria-pressed="${estado.ufs.has(uf)}">${uf}</button>`).join(" ");
-  document.querySelectorAll("#chipsUf .chip").forEach(c => c.onclick = () => {
-    const uf = c.dataset.uf; estado.ufs.has(uf) ? estado.ufs.delete(uf) : estado.ufs.add(uf); render();
+  todos("#distMod .barra").forEach(function (b) {
+    b.onclick = function () {
+      var g = b.getAttribute("data-grupo"); estado.grupo = estado.grupo === g ? "" : g;
+      document.getElementById("mod").value = estado.grupo; aplicar();
+    };
   });
-}
+  document.getElementById("busca").oninput = function (e) { estado.busca = e.target.value; aplicar(); };
+  document.getElementById("mod").onchange = function (e) { estado.grupo = e.target.value; aplicar(); };
+  document.getElementById("ordem").onchange = function (e) { estado.ordem = e.target.value; aplicar(); };
+  document.getElementById("soDevedor").onchange = function (e) { estado.soDevedor = e.target.checked; aplicar(); };
 
-function cartao(l) {
-  const pr = l.pracas.map(p => `
-    <div class="praca ${p.data < AGORA ? "passou" : ""}">
-      <div class="n">${p.n}ª praça</div>
-      <div>${dataCurta(p.data)} · ${hora(p.data)}</div>
-      <div class="v">${p.valor != null ? brl.format(p.valor) : "—"}</div>
-    </div>`).join("");
-  const pessoa = l.devedor ? `
-    <div class="pessoa">
-      <div class="rot">Devedor / executado · conferir${l.devedorFonte ? ` · fonte: ${esc(l.devedorFonte)}` : ""}</div>
-      <div class="nome">${esc(l.devedor)}</div>
-      ${l.docs.length ? `<div class="extra">CPF/CNPJ citado: ${esc(l.docs.join(", "))}</div>` : ""}
-      ${l.credor ? `<div class="extra">Credor / exequente: ${esc(l.credor)}</div>` : ""}
-    </div>` : `
-    <div class="pessoa vazia">
-      <div class="rot">Devedor</div>
-      <div>Não informado no anúncio${l.edital || l.matriculaPdf ? " — abra o edital ou a matrícula" : ""}.</div>
-      ${l.credor ? `<div class="extra">Credor / comitente: ${esc(l.credor)}</div>` : ""}
-      ${l.titular ? `<div class="extra">Titular citado na matrícula: ${esc(l.titular)}</div>` : ""}
-    </div>`;
-  const dados = [
-    ["Matrícula", l.matricula && `${l.matricula}${l.cartorio ? " · " + l.cartorio : ""}`],
-    ["Processo", l.processos[0]],
-    ["Avaliação", l.avaliacao && brl.format(l.avaliacao)],
-    ["CCIR", l.ccir],
-    ["Leiloeiro", l.leiloeiro],
-    ["Fonte", l.fonte + (l.tambemEm.length ? ` (+${l.tambemEm.length} site${l.tambemEm.length > 1 ? "s" : ""})` : "")],
-  ].filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("");
-  const prazo = l.dias == null ? `<div class="prazo MÉDIA"><b>?</b><span>sem data</span></div>`
-    : `<div class="prazo ${l.prio}"><b>${l.dias}</b><span>${l.dias === 1 ? "dia" : "dias"}</span></div>`;
-  return `
-  <article class="cartao ${l.prio}">
-    <div class="cab">
-      <div>
-        <h3>${esc(l.municipio || "Município não informado")} / ${esc(l.uf)}</h3>
-        <div class="onde">${esc(l.titulo)}</div>
-      </div>
-      ${prazo}
-    </div>
-    <div class="tags">
-      <span class="tag mod">${esc(l.modalidade || "Tipo não informado")}</span>
-      ${l.area ? `<span class="tag">${num.format(l.area)} ha</span>` : ""}
-      ${l.situacao ? `<span class="tag">${esc(l.situacao)}</span>` : ""}
-    </div>
-    ${pr ? `<div class="pracas">${pr}</div>` : ""}
-    ${pessoa}
-    ${dados ? `<dl class="dados">${dados}</dl>` : ""}
-    ${l.descricao ? `<details class="desc"><summary>Descrição do anúncio</summary><p>${esc(l.descricao)}</p></details>` : ""}
-    <div class="acoes">
-      <a class="btn principal" href="${esc(l.url)}" target="_blank" rel="noopener">Ver anúncio</a>
-      ${l.edital ? `<a class="btn" href="${esc(l.edital)}" target="_blank" rel="noopener">Edital (PDF)</a>` : ""}
-      ${l.matriculaPdf ? `<a class="btn" href="${esc(l.matriculaPdf)}" target="_blank" rel="noopener">Matrícula (PDF)</a>` : ""}
-      ${l.tambemEm.map(t => { const [f, ...u] = t.split(": "); return `<a class="btn" href="${esc(u.join(": "))}" target="_blank" rel="noopener">${esc(f)}</a>`; }).join("")}
-    </div>
-  </article>`;
-}
-
-const GRUPOS = [
-  ["URGENTE", "Esta semana", "Última praça em até 7 dias. Prioridade máxima de contato.", "var(--urgente)"],
-  ["ALTA", "Próximas 3 semanas", "Última praça entre 8 e 21 dias.", "var(--alta)"],
-  ["MÉDIA", "Mais adiante", "Última praça daqui a mais de 21 dias.", "var(--media)"],
-  ["SEM DATA", "Sem data informada", "O anúncio não trouxe as datas das praças.", "var(--faint)"],
-];
-
-function render() {
-  const q = semAcento(estado.busca).trim();
-  let lista = ATIVOS.filter(l =>
-    (!estado.ufs.size || estado.ufs.has(l.uf)) &&
-    (!estado.mod || l.grupo === estado.mod) &&
-    (!estado.soDevedor || l.devedor) &&
-    (!q || q.split(/\s+/).every(t => l.busca.includes(t))));
-  const ord = {
-    prazo: (a, b) => (a.dias ?? 1e9) - (b.dias ?? 1e9) || (!!b.devedor - !!a.devedor),
-    valor: (a, b) => (b.lance || 0) - (a.lance || 0),
-    area: (a, b) => (b.area || 0) - (a.area || 0),
-  }[estado.ordem];
-  lista.sort(ord);
-  document.getElementById("contagem").textContent = `Mostrando ${lista.length} de ${ATIVOS.length}`;
-  distribuicao();
-  const el = document.getElementById("lista");
-  if (!lista.length) { el.innerHTML = `<div class="vazio">Nenhum leilão com esses filtros.</div>`; return; }
-  el.innerHTML = GRUPOS.map(([p, titulo, texto, cor]) => {
-    const itens = lista.filter(l => l.prio === p);
-    if (!itens.length) return "";
-    return `<section class="grupo">
-      <h2><span class="ponto" style="background:${cor}"></span>${titulo} <span style="color:var(--muted);font-weight:400">(${itens.length})</span></h2>
-      <p>${texto}</p>
-      <div class="cartoes">${itens.map(cartao).join("")}</div>
-    </section>`;
-  }).join("");
-}
-
-document.getElementById("busca").oninput = e => { estado.busca = e.target.value; render(); };
-document.getElementById("mod").onchange = e => { estado.mod = e.target.value; render(); };
-document.getElementById("ordem").onchange = e => { estado.ordem = e.target.value; render(); };
-document.getElementById("soDevedor").onchange = e => { estado.soDevedor = e.target.checked; render(); };
-
-const fontes = Object.entries(contar(ATIVOS, l => l.fonte)).map(([f, n]) => `${f} (${n})`).join(", ");
-document.getElementById("rodape").innerHTML = `
-  <p><b>Fontes:</b> ${esc(fontes)}. Imóveis repetidos em mais de um site aparecem uma vez só.</p>
-  <p>Nomes, CPFs/CNPJs e números de processo foram extraídos automaticamente do texto público dos anúncios e editais e podem conter erros. Confirme sempre no edital e na matrícula atualizada antes de qualquer contato.</p>`;
-
-kpis();
-render();
+  var lista = document.getElementById("lista");
+  var vazio = document.createElement("div");
+  vazio.id = "semResultado"; vazio.className = "vazio"; vazio.hidden = true;
+  vazio.textContent = "Nenhum leilão com esses filtros.";
+  lista.appendChild(vazio);
+  aplicar();
+})();
 </script>
 </body>
 </html>
