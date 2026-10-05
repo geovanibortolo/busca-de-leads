@@ -1,0 +1,38 @@
+# Coleta diária dos leilões rurais e envio para a plataforma do escritório.
+# Segredos necessários (Settings > Secrets and variables > Actions):
+#   PLATAFORMA_URL    ex.: https://gestao-bc.onrender.com
+#   APP_IMPORT_TOKEN  mesmo token de importação configurado no Render
+name: Coleta diária de leilões
+
+on:
+  schedule:
+    - cron: "17 9 * * *"   # 06:17 em Brasília (09:17 UTC), todos os dias
+  workflow_dispatch: {}      # botão "Run workflow" para rodar na hora
+
+concurrency:
+  group: coleta-leiloes
+  cancel-in-progress: false
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PLATAFORMA_URL: ${{ secrets.PLATAFORMA_URL }}
+      APP_IMPORT_TOKEN: ${{ secrets.APP_IMPORT_TOKEN }}
+    steps:
+      - name: Segredos configurados?
+        if: ${{ env.PLATAFORMA_URL == '' || env.APP_IMPORT_TOKEN == '' }}
+        run: echo "::notice::Defina os segredos PLATAFORMA_URL e APP_IMPORT_TOKEN (Settings > Secrets and variables > Actions). Coleta pulada."
+      - if: ${{ env.PLATAFORMA_URL != '' && env.APP_IMPORT_TOKEN != '' }}
+        uses: actions/checkout@v4
+      - if: ${{ env.PLATAFORMA_URL != '' && env.APP_IMPORT_TOKEN != '' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - if: ${{ env.PLATAFORMA_URL != '' && env.APP_IMPORT_TOKEN != '' }}
+        run: sudo apt-get install -y -qq poppler-utils && pip install -r requirements.txt
+      - name: Coletar e enviar
+        if: ${{ env.PLATAFORMA_URL != '' && env.APP_IMPORT_TOKEN != '' }}
+        run: python -u -m leiloes --ufs PR SC RS --enviar --formatos html  # o HTML não é publicado: só os dados vão para a plataforma

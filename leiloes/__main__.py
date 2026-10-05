@@ -4,7 +4,7 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
-from . import edital, planilha, relatorio
+from . import edital, enviar, planilha, relatorio
 from .fontes import leilaodefazenda, leiloesjudiciais, megaleiloes, zuk
 from .http import Cliente
 from .modelo import unificar
@@ -34,6 +34,8 @@ def main():
     ap.add_argument("--incluir-encerrados", action="store_true", help="Mantém leilões cujas praças já passaram")
     ap.add_argument("--sem-edital", action="store_true", help="Não baixa editais em PDF para achar o devedor")
     ap.add_argument("--intervalo", type=float, default=1.5, help="Segundos entre requisições")
+    ap.add_argument("--enviar", action="store_true",
+                    help="Envia os leilões à plataforma (usa PLATAFORMA_URL e APP_IMPORT_TOKEN do ambiente)")
     args = ap.parse_args()
 
     saida = Path(args.saida or f"saida/leiloes_rurais_{datetime.now():%Y-%m-%d}")
@@ -61,6 +63,10 @@ def main():
         faltando = [l for l in leiloes if not l.devedor and edital.pode_baixar(l.link_edital)]
         achados = sum(edital.completar(cliente, l) for l in faltando)
         print(f"Editais lidos: devedor encontrado em {achados} de {len(faltando)} editais baixáveis sem nome no anúncio")
+
+    if args.enviar:
+        r = enviar.enviar(leiloes)
+        print(f"Plataforma: {r.get('recebidos')} recebidos, {r.get('novos')} novos, {r.get('atualizados')} atualizados")
 
     if "html" in args.formatos:
         n = relatorio.gerar(leiloes, saida.with_suffix(".html"))

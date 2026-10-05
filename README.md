@@ -57,6 +57,19 @@ Observações:
 - Regras do robots.txt de cada site são respeitadas (ex.: Zuk proíbe `/edital` e rotas AJAX; Leilões Judiciais proíbe `?pagina=`).
 - O coletor espera 1,5 s entre requisições e guarda cache de 20 h em `.cache/`.
 
+## Integração com a plataforma do escritório
+
+Os leilões vão para a aba **Comercial › Leilões** da plataforma (repositório `Site`), onde a equipe
+trabalha cada um (em análise, criar lead no CRM, descartar).
+
+- `python -m leiloes --enviar` envia para `PLATAFORMA_URL/api/leiloes/ingest` com o token `APP_IMPORT_TOKEN`
+  (variáveis de ambiente).
+- `.github/workflows/coleta-diaria.yml` roda a coleta **todo dia às 06:17 (Brasília)** e envia. Configure os
+  segredos `PLATAFORMA_URL` e `APP_IMPORT_TOKEN` em *Settings → Secrets and variables → Actions*; sem eles a
+  execução é pulada com um aviso. Passo a passo completo em `LEILOES.md` do repositório da plataforma.
+- Este repositório é **público**: o relatório e a planilha **não** são publicados pela automação (só os dados
+  vão para a plataforma, que exige login).
+
 ## Testes
 
 ```bash
