@@ -8,7 +8,7 @@ Foco inicial: **PR, SC e RS**.
 
 ```bash
 pip install -r requirements.txt
-python -m leiloes                       # PR, SC e RS -> saida/leiloes_rurais_AAAA-MM-DD.xlsx
+python -m leiloes                       # PR, SC e RS -> saida/leiloes_rurais_AAAA-MM-DD.html e .xlsx
 python -m leiloes --ufs PR --saida pr.xlsx
 python -m leiloes --modalidades 3 4     # só judicial (3) e extrajudicial (4) no Leilão de Fazendas
 python -m leiloes --fontes mega zuk     # só algumas fontes (fazendas, mega, zuk, judiciais)
@@ -19,6 +19,15 @@ Códigos de modalidade (filtro do site): `3` Judicial, `4` Extrajudicial, `5` Ou
 Padrão: `3 4 5`. Venda direta fica de fora porque o devedor já perdeu o imóvel.
 
 Leilões cujas praças já passaram são descartados (use `--incluir-encerrados` para manter).
+
+## Relatório (HTML)
+
+Arquivo único que abre no navegador (funciona offline, tema claro/escuro, celular):
+
+- Resumo no topo (urgentes, com devedor identificado, soma dos lances, área) e distribuição por estado e tipo de leilão — clicar numa barra filtra.
+- Busca por município, devedor, credor, processo ou matrícula; filtros por UF, tipo e "só com devedor".
+- Um cartão por imóvel, agrupado em **Esta semana / Próximas 3 semanas / Mais adiante**, com prazo em dias (recalculado ao abrir), praças, devedor, matrícula, processo e botões para anúncio, edital e matrícula.
+- Seção "Como ler este relatório" explica prazos, tipos de leilão e praças.
 
 ## Planilha
 

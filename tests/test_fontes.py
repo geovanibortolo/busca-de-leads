@@ -73,3 +73,15 @@ def test_rotulos_com_nomes_em_caixa_alta():
     assert extrair.devedor("Executado(s): Jab Materiais Elétricos Ltda Bem(ns): 01 terreno") == "Jab Materiais Elétricos Ltda"
     assert extrair.matricula("2.227.500,00 m² (222,75 ha)") is None
     assert extrair.cartorio("MATRÍCULA 15.159 DO CARTÓRIO DE REGISTRO DE IMÓVEIS DE RODEIO BONITO") == "RODEIO BONITO"
+
+
+def test_relatorio_html(tmp_path):
+    from leiloes import relatorio
+
+    l = leiloesjudiciais.ler_detalhe(_ler("lj_detalhe.html"), "https://x/lote/99790/218267", "pr")
+    l.devedor = "Nome </script><b>teste</b>"
+    arq = tmp_path / "r.html"
+    assert relatorio.gerar([l], arq) == 1
+    html = arq.read_text(encoding="utf-8")
+    assert "__DADOS__" not in html and "Pinhão" in html
+    assert "</script><b>" not in html  # dados não fecham o <script>

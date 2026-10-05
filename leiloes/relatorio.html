@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leilões Rurais – Sul</title>
+<style>
+:root {
+  --bg: #f4f2ec;
+  --surface: #ffffff;
+  --surface-2: #f8f7f3;
+  --ink: #1d2620;
+  --muted: #5d6a61;
+  --faint: #8a958d;
+  --line: #e2dfd5;
+  --accent: #2f6b3f;
+  --accent-soft: #e5efe6;
+  --on-accent: #ffffff;
+  --urgente: #b42318;
+  --urgente-soft: #fde7e4;
+  --alta: #a15c07;
+  --alta-soft: #fdf0d9;
+  --media: #3d6b4f;
+  --media-soft: #e6f0e8;
+  --info-soft: #eef2f7;
+  --shadow: 0 1px 2px rgba(29, 38, 32, .06), 0 2px 8px rgba(29, 38, 32, .05);
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141815; --surface: #1c221e; --surface-2: #222a25; --ink: #e8ece7; --muted: #a9b5ac;
+    --faint: #7d8a81; --line: #2f3832; --accent: #7cc38f; --accent-soft: #23362a; --on-accent: #10251a;
+    --urgente: #ff8a7a; --urgente-soft: #3a1f1c; --alta: #f5b759; --alta-soft: #3a2d17;
+    --media: #8fd0a3; --media-soft: #1f3326; --info-soft: #222a33; --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141815; --surface: #1c221e; --surface-2: #222a25; --ink: #e8ece7; --muted: #a9b5ac;
+  --faint: #7d8a81; --line: #2f3832; --accent: #7cc38f; --accent-soft: #23362a; --on-accent: #10251a;
+  --urgente: #ff8a7a; --urgente-soft: #3a1f1c; --alta: #f5b759; --alta-soft: #3a2d17;
+  --media: #8fd0a3; --media-soft: #1f3326; --info-soft: #222a33; --shadow: none;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+a { color: var(--accent); }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+header.topo { padding: 28px 0 8px; }
+.topo h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: -.01em; }
+.topo p { margin: 0; color: var(--muted); }
+.tema { float: right; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 999px; padding: 6px 12px; cursor: pointer; font: inherit; font-size: 13px; }
+
+/* Como ler */
+details.guia { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  margin: 18px 0; box-shadow: var(--shadow); }
+details.guia > summary { cursor: pointer; padding: 14px 18px; font-weight: 600; list-style: none; }
+details.guia > summary::-webkit-details-marker { display: none; }
+details.guia > summary::before { content: "▸ "; color: var(--accent); }
+details.guia[open] > summary::before { content: "▾ "; }
+.guia-corpo { padding: 0 18px 16px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.guia-corpo h3 { margin: 0 0 4px; font-size: 14px; }
+.guia-corpo p, .guia-corpo li { margin: 0; color: var(--muted); font-size: 14px; }
+.guia-corpo ul { margin: 0; padding-left: 18px; }
+
+/* Indicadores */
+.kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin: 8px 0 18px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
+.kpi .rot { color: var(--muted); font-size: 13px; }
+.kpi .num { font-size: 28px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.kpi .sub { color: var(--faint); font-size: 12px; }
+.kpi.urgente .num { color: var(--urgente); }
+
+/* Distribuição */
+.dist { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-bottom: 18px; }
+.painel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
+.painel h2 { font-size: 14px; margin: 0 0 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.barra { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 10px; padding: 4px 6px;
+  border-radius: 8px; cursor: pointer; border: 0; background: none; width: 100%; color: inherit; font: inherit; text-align: left; }
+.barra:hover { background: var(--surface-2); }
+.barra.ativa { background: var(--accent-soft); }
+.barra .trilho { display: block; height: 10px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.barra .cheio { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.barra .q { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* Filtros */
+.filtros { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px); padding: 10px 0; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.filtros .linha { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.filtros input[type=search], .filtros select {
+  font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.filtros input[type=search] { flex: 1 1 260px; }
+.chip { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.chk { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; color: var(--muted); cursor: pointer; }
+.contagem { color: var(--muted); font-size: 13px; margin-left: auto; }
+
+/* Grupos e cartões */
+section.grupo { margin: 18px 0 26px; }
+section.grupo > h2 { display: flex; align-items: center; gap: 10px; font-size: 18px; margin: 0 0 4px; }
+section.grupo > p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+.ponto { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.cartoes { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+.cartao { background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--media);
+  border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.cartao.URGENTE { border-left-color: var(--urgente); }
+.cartao.ALTA { border-left-color: var(--alta); }
+.cab { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.cab h3 { margin: 0; font-size: 17px; line-height: 1.25; }
+.cab .onde { color: var(--muted); font-size: 13px; }
+.prazo { text-align: center; border-radius: 10px; padding: 4px 10px; min-width: 74px; flex: none; }
+.prazo b { display: block; font-size: 22px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.prazo span { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.prazo.URGENTE { background: var(--urgente-soft); color: var(--urgente); }
+.prazo.ALTA { background: var(--alta-soft); color: var(--alta); }
+.prazo.MÉDIA { background: var(--media-soft); color: var(--media); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); }
+.tag.mod { background: var(--info-soft); }
+.pracas { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.praca { background: var(--surface-2); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+.praca.passou { opacity: .5; text-decoration: line-through; }
+.praca .n { color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.praca .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+.pessoa { border-radius: 10px; padding: 8px 10px; background: var(--accent-soft); font-size: 14px; }
+.pessoa.vazia { background: var(--surface-2); color: var(--muted); }
+.pessoa .rot { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.pessoa .nome { font-weight: 600; overflow-wrap: anywhere; }
+.pessoa .extra { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+dl.dados { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; font-size: 13px; }
+dl.dados dt { color: var(--faint); }
+dl.dados dd { margin: 0; overflow-wrap: anywhere; }
+.acoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+.btn { font-size: 13px; text-decoration: none; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line);
+  color: var(--ink); background: var(--surface); }
+.btn.principal { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.btn:hover { filter: brightness(.97); }
+details.desc summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+details.desc p { font-size: 13px; color: var(--muted); margin: 6px 0 0; max-height: 220px; overflow: auto; }
+.vazio { padding: 30px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); }
+footer { color: var(--faint); font-size: 13px; padding: 24px 0 40px; border-top: 1px solid var(--line); margin-top: 20px; }
+@media (max-width: 720px) {
+  .filtros { position: static; backdrop-filter: none; }
+}
+@media (max-width: 520px) {
+  .cartoes { grid-template-columns: 1fr; }
+  .barra { grid-template-columns: 90px 1fr 36px; }
+  .topo h1 { font-size: 22px; }
+}
+@media print {
+  .filtros, .tema, details.guia { display: none; }
+  .cartao { break-inside: avoid; box-shadow: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topo">
+    <button class="tema" id="tema" type="button">Tema</button>
+    <h1>Leilões de imóveis rurais</h1>
+    <p id="subtitulo"></p>
+  </header>
+
+  <details class="guia">
+    <summary>Como ler este relatório</summary>
+    <div class="guia-corpo">
+      <div><h3>Prazo (o número grande)</h3>
+        <p>Dias até a <b>última praça</b> marcada. Até ela, o devedor ainda pode agir: recomprar pelo valor da dívida (alienação fiduciária) ou pedir a suspensão/anulação do leilão.</p></div>
+      <div><h3>Cores</h3>
+        <ul><li><b style="color:var(--urgente)">Urgente</b>: 7 dias ou menos</li>
+        <li><b style="color:var(--alta)">Alta</b>: 8 a 21 dias</li>
+        <li><b style="color:var(--media)">Média</b>: mais de 21 dias</li></ul></div>
+      <div><h3>Tipo de leilão</h3>
+        <ul><li><b>Judicial</b>: dentro de um processo; tem número e partes (exequente × executado).</li>
+        <li><b>Extrajudicial</b>: banco/cooperativa tomou o imóvel no cartório (alienação fiduciária), sem processo.</li>
+        <li><b>Outro</b>: classificação do site não informada; confira no edital.</li></ul></div>
+      <div><h3>Praças</h3>
+        <p>1ª praça: lance mínimo costuma ser a avaliação. 2ª praça: costuma cair para 50% ou para o valor da dívida.</p></div>
+      <div><h3>Devedor / executado</h3>
+        <p>Extraído automaticamente do anúncio ou do edital. <b>Sempre conferir</b>: às vezes é outra penhora registrada na matrícula. Sem nome? Abra o edital ou a matrícula pelos botões do cartão.</p></div>
+      <div><h3>Próximo passo sugerido</h3>
+        <p>Matrícula + cartório permitem pedir a certidão atualizada, que mostra proprietário, CPF e as cédulas/hipotecas registradas.</p></div>
+    </div>
+  </details>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="dist">
+    <div class="painel"><h2>Por estado</h2><div id="distUf"></div></div>
+    <div class="painel"><h2>Por tipo de leilão</h2><div id="distMod"></div></div>
+  </div>
+</div>
+
+<div class="filtros">
+  <div class="wrap linha">
+    <input type="search" id="busca" placeholder="Buscar município, devedor, credor, processo, matrícula…" aria-label="Buscar">
+    <span id="chipsUf"></span>
+    <select id="mod" aria-label="Tipo de leilão">
+      <option value="">Todos os tipos</option>
+      <option>Judicial</option><option>Extrajudicial</option><option>Outro</option><option>PGFN</option>
+    </select>
+    <select id="ordem" aria-label="Ordenar por">
+      <option value="prazo">Ordenar: prazo</option>
+      <option value="valor">Ordenar: maior lance</option>
+      <option value="area">Ordenar: maior área</option>
+    </select>
+    <label class="chk"><input type="checkbox" id="soDevedor"> só com devedor identificado</label>
+    <span class="contagem" id="contagem"></span>
+  </div>
+</div>
+
+<main class="wrap" id="lista"></main>
+
+<div class="wrap">
+  <footer id="rodape"></footer>
+</div>
+
+<script>
+const DADOS = __DADOS__;
+const GERADO = new Date("__GERADO__");
+const AGORA = new Date();
+const DIA = 86400000;
+
+const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const num = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
+const dataCurta = d => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+const hora = d => d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const semAcento = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+// Prazo e prioridade calculados na hora de abrir (o arquivo continua certo dias depois)
+for (const l of DADOS) {
+  l.pracas.forEach(p => p.data = new Date(p.quando));
+  const ultima = l.pracas.length ? l.pracas[l.pracas.length - 1].data : null;
+  l.dias = ultima ? Math.ceil((ultima - AGORA) / DIA) : null;
+  l.prio = l.dias == null ? "SEM DATA" : l.dias <= 7 ? "URGENTE" : l.dias <= 21 ? "ALTA" : "MÉDIA";
+  l.lance = (l.pracas.find(p => p.data >= AGORA) || {}).valor ?? (l.pracas[0] || {}).valor ?? null;
+  l.busca = semAcento([l.municipio, l.uf, l.devedor, l.credor, l.titular, l.processos.join(" "), l.matricula,
+    l.cartorio, l.titulo, l.leiloeiro, l.docs.join(" ")].join(" "));
+}
+const ATIVOS = DADOS.filter(l => l.dias == null || l.dias >= 0);
+
+const estado = { busca: "", ufs: new Set(), mod: "", soDevedor: false, ordem: "prazo" };
+
+// Tema
+const raiz = document.documentElement;
+try { const t = localStorage.getItem("tema"); if (t) raiz.dataset.theme = t; } catch (e) {}
+document.getElementById("tema").onclick = () => {
+  const escuro = raiz.dataset.theme ? raiz.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  raiz.dataset.theme = escuro ? "light" : "dark";
+  try { localStorage.setItem("tema", raiz.dataset.theme); } catch (e) {}
+};
+
+document.getElementById("subtitulo").textContent =
+  `${ATIVOS.length} imóveis com leilão marcado em ${[...new Set(ATIVOS.map(l => l.uf))].sort().join(", ")} · dados coletados em ${dataCurta(GERADO)} às ${hora(GERADO)}`;
+
+function kpis() {
+  const urg = ATIVOS.filter(l => l.prio === "URGENTE").length;
+  const alta = ATIVOS.filter(l => l.prio === "ALTA").length;
+  const dev = ATIVOS.filter(l => l.devedor).length;
+  const total = ATIVOS.reduce((s, l) => s + (l.lance || 0), 0);
+  const area = ATIVOS.reduce((s, l) => s + (l.area || 0), 0);
+  document.getElementById("kpis").innerHTML = `
+    <div class="kpi urgente"><div class="rot">Urgentes (≤ 7 dias)</div><div class="num">${urg}</div><div class="sub">+ ${alta} com 8 a 21 dias</div></div>
+    <div class="kpi"><div class="rot">Com devedor identificado</div><div class="num">${dev}</div><div class="sub">${Math.round(dev / Math.max(ATIVOS.length, 1) * 100)}% dos leilões</div></div>
+    <div class="kpi"><div class="rot">Soma dos lances mínimos</div><div class="num">${brl.format(total / 1e6).replace(/\s?R\$\s?/, "R$ ")} mi</div><div class="sub">próxima praça de cada imóvel</div></div>
+    <div class="kpi"><div class="rot">Área total</div><div class="num">${num.format(Math.round(area))} ha</div><div class="sub">quando informada no anúncio</div></div>`;
+}
+
+function barras(alvo, contagem, ativo, aoClicar) {
+  const max = Math.max(...Object.values(contagem), 1);
+  const el = document.getElementById(alvo);
+  el.innerHTML = Object.entries(contagem).sort((a, b) => b[1] - a[1]).map(([k, v]) => `
+    <button class="barra ${ativo(k) ? "ativa" : ""}" data-k="${esc(k)}" type="button" aria-pressed="${ativo(k)}">
+      <span>${esc(k)}</span><span class="trilho"><span class="cheio" style="width:${v / max * 100}%"></span></span><span class="q">${v}</span>
+    </button>`).join("");
+  el.querySelectorAll(".barra").forEach(b => b.onclick = () => aoClicar(b.dataset.k));
+}
+
+function contar(lista, f) { return lista.reduce((o, l) => (o[f(l)] = (o[f(l)] || 0) + 1, o), {}); }
+
+function distribuicao() {
+  barras("distUf", contar(ATIVOS, l => l.uf), k => estado.ufs.has(k), k => {
+    estado.ufs.has(k) ? estado.ufs.delete(k) : estado.ufs.add(k); render();
+  });
+  barras("distMod", contar(ATIVOS, l => l.grupo), k => estado.mod === k, k => {
+    estado.mod = estado.mod === k ? "" : k; document.getElementById("mod").value = estado.mod; render();
+  });
+  document.getElementById("chipsUf").innerHTML = [...new Set(ATIVOS.map(l => l.uf))].sort().map(uf =>
+    `<button class="chip" type="button" data-uf="${uf}" aria-pressed="${estado.ufs.has(uf)}">${uf}</button>`).join(" ");
+  document.querySelectorAll("#chipsUf .chip").forEach(c => c.onclick = () => {
+    const uf = c.dataset.uf; estado.ufs.has(uf) ? estado.ufs.delete(uf) : estado.ufs.add(uf); render();
+  });
+}
+
+function cartao(l) {
+  const pr = l.pracas.map(p => `
+    <div class="praca ${p.data < AGORA ? "passou" : ""}">
+      <div class="n">${p.n}ª praça</div>
+      <div>${dataCurta(p.data)} · ${hora(p.data)}</div>
+      <div class="v">${p.valor != null ? brl.format(p.valor) : "—"}</div>
+    </div>`).join("");
+  const pessoa = l.devedor ? `
+    <div class="pessoa">
+      <div class="rot">Devedor / executado · conferir${l.devedorFonte ? ` · fonte: ${esc(l.devedorFonte)}` : ""}</div>
+      <div class="nome">${esc(l.devedor)}</div>
+      ${l.docs.length ? `<div class="extra">CPF/CNPJ citado: ${esc(l.docs.join(", "))}</div>` : ""}
+      ${l.credor ? `<div class="extra">Credor / exequente: ${esc(l.credor)}</div>` : ""}
+    </div>` : `
+    <div class="pessoa vazia">
+      <div class="rot">Devedor</div>
+      <div>Não informado no anúncio${l.edital || l.matriculaPdf ? " — abra o edital ou a matrícula" : ""}.</div>
+      ${l.credor ? `<div class="extra">Credor / comitente: ${esc(l.credor)}</div>` : ""}
+      ${l.titular ? `<div class="extra">Titular citado na matrícula: ${esc(l.titular)}</div>` : ""}
+    </div>`;
+  const dados = [
+    ["Matrícula", l.matricula && `${l.matricula}${l.cartorio ? " · " + l.cartorio : ""}`],
+    ["Processo", l.processos[0]],
+    ["Avaliação", l.avaliacao && brl.format(l.avaliacao)],
+    ["CCIR", l.ccir],
+    ["Leiloeiro", l.leiloeiro],
+    ["Fonte", l.fonte + (l.tambemEm.length ? ` (+${l.tambemEm.length} site${l.tambemEm.length > 1 ? "s" : ""})` : "")],
+  ].filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("");
+  const prazo = l.dias == null ? `<div class="prazo MÉDIA"><b>?</b><span>sem data</span></div>`
+    : `<div class="prazo ${l.prio}"><b>${l.dias}</b><span>${l.dias === 1 ? "dia" : "dias"}</span></div>`;
+  return `
+  <article class="cartao ${l.prio}">
+    <div class="cab">
+      <div>
+        <h3>${esc(l.municipio || "Município não informado")} / ${esc(l.uf)}</h3>
+        <div class="onde">${esc(l.titulo)}</div>
+      </div>
+      ${prazo}
+    </div>
+    <div class="tags">
+      <span class="tag mod">${esc(l.modalidade || "Tipo não informado")}</span>
+      ${l.area ? `<span class="tag">${num.format(l.area)} ha</span>` : ""}
+      ${l.situacao ? `<span class="tag">${esc(l.situacao)}</span>` : ""}
+    </div>
+    ${pr ? `<div class="pracas">${pr}</div>` : ""}
+    ${pessoa}
+    ${dados ? `<dl class="dados">${dados}</dl>` : ""}
+    ${l.descricao ? `<details class="desc"><summary>Descrição do anúncio</summary><p>${esc(l.descricao)}</p></details>` : ""}
+    <div class="acoes">
+      <a class="btn principal" href="${esc(l.url)}" target="_blank" rel="noopener">Ver anúncio</a>
+      ${l.edital ? `<a class="btn" href="${esc(l.edital)}" target="_blank" rel="noopener">Edital (PDF)</a>` : ""}
+      ${l.matriculaPdf ? `<a class="btn" href="${esc(l.matriculaPdf)}" target="_blank" rel="noopener">Matrícula (PDF)</a>` : ""}
+      ${l.tambemEm.map(t => { const [f, ...u] = t.split(": "); return `<a class="btn" href="${esc(u.join(": "))}" target="_blank" rel="noopener">${esc(f)}</a>`; }).join("")}
+    </div>
+  </article>`;
+}
+
+const GRUPOS = [
+  ["URGENTE", "Esta semana", "Última praça em até 7 dias. Prioridade máxima de contato.", "var(--urgente)"],
+  ["ALTA", "Próximas 3 semanas", "Última praça entre 8 e 21 dias.", "var(--alta)"],
+  ["MÉDIA", "Mais adiante", "Última praça daqui a mais de 21 dias.", "var(--media)"],
+  ["SEM DATA", "Sem data informada", "O anúncio não trouxe as datas das praças.", "var(--faint)"],
+];
+
+function render() {
+  const q = semAcento(estado.busca).trim();
+  let lista = ATIVOS.filter(l =>
+    (!estado.ufs.size || estado.ufs.has(l.uf)) &&
+    (!estado.mod || l.grupo === estado.mod) &&
+    (!estado.soDevedor || l.devedor) &&
+    (!q || q.split(/\s+/).every(t => l.busca.includes(t))));
+  const ord = {
+    prazo: (a, b) => (a.dias ?? 1e9) - (b.dias ?? 1e9) || (!!b.devedor - !!a.devedor),
+    valor: (a, b) => (b.lance || 0) - (a.lance || 0),
+    area: (a, b) => (b.area || 0) - (a.area || 0),
+  }[estado.ordem];
+  lista.sort(ord);
+  document.getElementById("contagem").textContent = `Mostrando ${lista.length} de ${ATIVOS.length}`;
+  distribuicao();
+  const el = document.getElementById("lista");
+  if (!lista.length) { el.innerHTML = `<div class="vazio">Nenhum leilão com esses filtros.</div>`; return; }
+  el.innerHTML = GRUPOS.map(([p, titulo, texto, cor]) => {
+    const itens = lista.filter(l => l.prio === p);
+    if (!itens.length) return "";
+    return `<section class="grupo">
+      <h2><span class="ponto" style="background:${cor}"></span>${titulo} <span style="color:var(--muted);font-weight:400">(${itens.length})</span></h2>
+      <p>${texto}</p>
+      <div class="cartoes">${itens.map(cartao).join("")}</div>
+    </section>`;
+  }).join("");
+}
+
+document.getElementById("busca").oninput = e => { estado.busca = e.target.value; render(); };
+document.getElementById("mod").onchange = e => { estado.mod = e.target.value; render(); };
+document.getElementById("ordem").onchange = e => { estado.ordem = e.target.value; render(); };
+document.getElementById("soDevedor").onchange = e => { estado.soDevedor = e.target.checked; render(); };
+
+const fontes = Object.entries(contar(ATIVOS, l => l.fonte)).map(([f, n]) => `${f} (${n})`).join(", ");
+document.getElementById("rodape").innerHTML = `
+  <p><b>Fontes:</b> ${esc(fontes)}. Imóveis repetidos em mais de um site aparecem uma vez só.</p>
+  <p>Nomes, CPFs/CNPJs e números de processo foram extraídos automaticamente do texto público dos anúncios e editais e podem conter erros. Confirme sempre no edital e na matrícula atualizada antes de qualquer contato.</p>`;
+
+kpis();
+render();
+</script>
+</body>
+</html>

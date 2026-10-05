@@ -111,7 +111,8 @@ def ler_detalhe(html, url, uf, modalidade):
 
     # Campos "Matrícula:"/"Comarca:" do site às vezes emendam o texto seguinte
     matricula = extrair.matricula(c.get("Matrícula", "")) or ""
-    comarca = re.split(r"\s+[A-ZÁ-Ú][\wÁ-ú]+(?:\s[\wÁ-ú]+){0,2}:", c.get("Comarca", ""))[0].strip()
+    comarca = re.sub(r"^(?:DE|DA|DO)\s+", "", c.get("Comarca", ""), flags=re.I)
+    comarca = re.split(r"\s+[A-ZÁ-Ú][\wÁ-ú]+(?:\s[\wÁ-ú]+){0,2}:", comarca)[0].strip()
     cartorio = extrair.cartorio(descricao, f"{municipio}/{uf.upper()}")
     if not cartorio and comarca:
         cartorio = comarca + (f" ({c['Ofício'][:3].strip()}º Ofício)" if c.get("Ofício") else "")
